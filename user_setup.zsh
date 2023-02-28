@@ -1,13 +1,14 @@
 #!/usr/bin/env zsh
+# We use  anonymous functions here just to make the logical groups more readable
+
 set -euo pipefail
 export HELM_EXPERIMENTAL_OCI=1
 
 mkdir -p ~/.local/bin ~/.local/share ~/.local/lib ~/.local/src
 export PATH="$HOME/.local/bin:$HOME/.pyenv/bin:$HOME/.local/google-cloud-sdk/bin:$HOME/.local/go/bin:$HOME/.cargo/bin:$PATH"
 
-
 # install zsh
-echo "Installing og-my-zsh"
+echo "Installing oh-my-zsh"
 function {
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git \
@@ -15,17 +16,17 @@ function {
   git clone https://github.com/johanhaleby/kubetail.git \
     ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/kubetail
   git clone https://github.com/zsh-users/zsh-autosuggestions \
-    ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-autosuggestions
+    ${ZSH_CUSTOM:-${ZSH:-$HOME/.oh-my-zsh}/custom}/plugins/zsh-autosuggestions
   git clone https://github.com/zsh-users/zsh-completions \
-    ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-completions
+    ${ZSH_CUSTOM:-${ZSH:-$HOME/.oh-my-zsh}/custom}/plugins/zsh-completions
 }
 
 #  install python tools
 echo "Installing python and python apps"
 function {
   curl -sL https://pyenv.run | bash
-  pipx install poetry
-  pipx inject --include-apps poetry poethepoet
+  pipx install poetry && \
+    pipx inject --include-apps poetry 'poethepoet[poetry_plugin]'
   pipx install yq
   pipx install rich-cli
   pipx install httpie
@@ -66,7 +67,7 @@ echo "Installing google cli tools"
 function {
   curl -sLO https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${GCLOUD_CLI_VERSION}-linux-x86_64.tar.gz
   tar --directory $HOME/.local -xzf google-cloud-cli-${GCLOUD_CLI_VERSION}-linux-x86_64.tar.gz && rm google-cloud-cli-${GCLOUD_CLI_VERSION}-linux-x86_64.tar.gz
-  gcloud components install gke-gcloud-auth-plugin
+  cd $HOME/.local/google-cloud-sdk && ./install.sh --additional-components gke-gcloud-auth-plugin && cd  $HOME
 }
 
 echo "Installing github tools"
@@ -121,3 +122,10 @@ function {
 function {
   go install github.com/stern/stern@latest
 }
+
+echo clearing out stuff from $HOME
+sudo rm -rf $HOME/.cache && mkdir $HOME/.cache
+sudo mv $HOME/.cargo/bin/(fd|rg|dust) /usr/local/bin
+sudo rm -rf $HOME/.cargo $HOME/.rustup             # rust no longer needed unless we install other stuff
+sudo mv $HOME/go/bin/* /usr/local/bin
+sudo rm -rf $HOME/go                               # ditto
